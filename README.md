@@ -1,5 +1,5 @@
 # Fort Joy
-*the program displays data about the demographics of the Fort Joy Island*
+**the program displays data about the demographics of the Fort Joy Island**
 **start the program using terminal input**
 **use "node server" followed by a digit**
 > node server 2
