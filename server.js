@@ -1,6 +1,8 @@
 const fetch = require("node-fetch");
 const inquirer = require("inquirer");
 const currentYear = new Date().getFullYear();
+const reduceMethod = true; //   this is used to execute 2.1.2 - Using reduce.
+//   to execute 2.1.1 - Recursive toggle the value to false
 
 if (process.argv.length >= 3) {
   const n = Number(process.argv.slice(2));
@@ -35,8 +37,6 @@ if (process.argv.length >= 3) {
             }
             let counter = 0;
             let ageArray = [];
-            const reducer = (accumulator, currentValue) =>
-              accumulator + currentValue;
             for (let index = 0; index < people.length; index++) {
               const person = people[index];
               if (
@@ -47,11 +47,19 @@ if (process.argv.length >= 3) {
                 ageArray.push(currentYear - person.birthYear);
               }
             }
+            const reducer = (accumulator, currentValue) =>
+              accumulator + currentValue;
+            // the line below is what makes the code use either recursion of reduce
+            let averagAgeOfAllThePeopleAlive = reduceMethod
+              ? ageArray.reduce(reducer) / counter
+              : recursion(ageArray, counter);
+            console.log("     ");
             console.log(
               `average age of all the people currently alive in ${specificOccupation} is ${Math.round(
-                ageArray.reduce(reducer) / counter
+                averagAgeOfAllThePeopleAlive
               )}`
             );
+            console.log("     ");
           })
           .catch((error) => {
             console.error(error);
@@ -63,14 +71,18 @@ if (process.argv.length >= 3) {
         break;
       //people current alive ordered by age
       case 2:
+        let livingAgeMap = new Map();
         for (let index = 0; index < people.length; index++) {
           const person = people[index];
-          if (person.deathYear == null) {
-            console.log(
-              ` the age of ${person.name} is ${currentYear - person.birthYear}`
-            );
-          } else {
+          if (person.deathYear == undefined) {
+            let age = currentYear - person.birthYear;
+            livingAgeMap.set(age, person.name);
           }
+        }
+        mapSort(livingAgeMap);
+
+        for (let [key, value] of livingAgeMap.entries()) {
+          console.log(` the age of ${value} is ${key}`);
         }
 
         break;
@@ -118,17 +130,20 @@ if (process.argv.length >= 3) {
         fishingExpectancy = Math.round(
           fishingArray.reduce(reducer) / fishingCounter
         );
+        console.log("     ");
         console.log(`fishing ${fishingExpectancy} years`);
         console.log(`farming ${farmingExpectancy} years`);
         console.log(`trading ${tradingExpectancy} years`);
+        console.log("     ");
         break;
       //year with the most people alive
       case 4:
         let counters = new Map();
         const startYear = 1900;
         const endYear = 2020;
-        let yearWithMostPeopleAlive = startYear;// initialing variable with first year of the period study study
-        for (let index = startYear; index <= endYear; index++) { // iterating through all years of period study
+        let yearWithMostPeopleAlive = startYear; // initialing variable with first year of the study period
+        for (let index = startYear; index <= endYear; index++) {
+          // iterating through all years of study period
           let counter = 0;
           for (let j = 0; j < people.length; j++) {
             const person = people[j];
@@ -145,34 +160,20 @@ if (process.argv.length >= 3) {
             }
 
             counters.set(index, counter);
-            let keys = [...counters.keys()];
-            // Used a technique to fix the default behaviour or Array.sort()  [1, 10, 12, 14, 2, 23...]
-            // reference:  https://www.javascripttutorial.net/javascript-array-sort/
-            sortedKeys = keys.sort(function (a, b) {
-              if (a > b) return 1;
-              if (a < b) return -1;
-              return 0;
-            });
-            // Inspired by the following https://stackoverflow.com/questions/31158902/is-it-possible-to-sort-a-es6-map-object/51242261
-            // to sort the map
-            sortedKeys.forEach((key) => {
-              const value = counters.get(key);
-              counters.delete(key);
-              counters.set(key, value);
-            });
-            //counters.sort();
           }
+          mapSort(counters);
           yearWithMostPeopleAlive =
             counter > counters.get(counters.size - 1)
               ? index
               : yearWithMostPeopleAlive;
         }
-
+        console.log("     ");
         console.log(
           `The year with most people alive has been ${yearWithMostPeopleAlive} with ${
             counters.size - 1
           } people alive`
         );
+        console.log("     ");
         break;
       //person(s) who has(have) lived the longest
       case 5:
@@ -186,40 +187,29 @@ if (process.argv.length >= 3) {
               : currentYear - person.birthYear;
           yearsLivedMap.set(yearsLived, person.name);
         }
-        let keys = [...yearsLivedMap.keys()];
-        // I used a technique to fix the default behaviour or Array.sort()  [1, 10, 12, 14, 2, 23...]
-        // reference:  https://www.javascripttutorial.net/javascript-array-sort/
-        sortedKeys = keys.sort(function (a, b) {
-          if (a > b) return 1;
-          if (a < b) return -1;
-          return 0;
-        });
-        // I was inspired by the following https://stackoverflow.com/questions/31158902/is-it-possible-to-sort-a-es6-map-object/51242261
-        // to sort the map
-        sortedKeys.forEach((key) => {
-          const value = yearsLivedMap.get(key);
-          yearsLivedMap.delete(key);
-          yearsLivedMap.set(key, value);
-        });
+        mapSort(yearsLivedMap);
+        console.log("     ");
         console.log(
           `The person who has lived the longest has been ${yearsLivedMap.get(
             yearsLivedMap.size - 1
           )} `
         );
+        console.log("     ");
         break;
     }
   });
 } else {
   console.log(
-    "please enter node server followed by a digit argument from 1 to 5"
+    "please enter node server followed by a digit argument from 1 to 5:"
   );
   console.log(
-    "1: average age of all the people currently alive for a specific occupation"
+    "     1: average age of all the people currently alive for a specific occupation"
   );
-  console.log("2: people current alive ordered by age");
-  console.log("3: average life expectancy per occupation");
-  console.log("4: year with the most people alive");
-  console.log("5: person(s) who has(have) lived the longest");
+  console.log("     2: people current alive ordered by age");
+  console.log("     3: average life expectancy per occupation");
+  console.log("     4: year with the most people alive");
+  console.log("     5: person(s) who has(have) lived the longest");
+  console.log("     ");
 }
 async function sendRequest() {
   return new Promise(async (resolve, reject) => {
@@ -232,5 +222,30 @@ async function sendRequest() {
     } catch (error) {
       console.error(error);
     }
+  });
+}
+function recursion(aa, c) {
+  let group = 0;
+  for (let index = 0; index < aa.length; index++) {
+    const age = aa[index];
+    group += age;
+  }
+  return group / c;
+}
+function mapSort(map) {
+  let keys = [...map.keys()];
+  // I used a technique to fix the default behaviour or Array.sort()  [1, 10, 12, 14, 2, 23...]
+  // reference:  https://www.javascripttutorial.net/javascript-array-sort/
+  sortedKeys = keys.sort(function (a, b) {
+    if (a > b) return 1;
+    if (a < b) return -1;
+    return 0;
+  });
+  // I was inspired by the following https://stackoverflow.com/questions/31158902/is-it-possible-to-sort-a-es6-map-object/51242261
+  // to sort the map
+  sortedKeys.forEach((key) => {
+    const value = map.get(key);
+    map.delete(key);
+    map.set(key, value);
   });
 }
